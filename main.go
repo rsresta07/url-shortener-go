@@ -26,8 +26,8 @@ func main() {
 	e.Use(middleware.Secure())
 
 	e.GET("/:id", RedirectHandler)
-	// e.GET("/", IndexHandler)
-	// e.POST("/submit", SubmitHandler)
+	e.GET("/", IndexHandler)
+	e.POST("/submit", SubmitHandler)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
@@ -54,4 +54,41 @@ func generateRandomString(length int) string {
 	}
 
 	return string(result)
+}
+
+func IndexHandler(c echo.Context) error {
+	html := `
+		<h1>Submit a new Website</h1>
+		<form action ='/submit' method="POST">
+		<label for="url">Website URL: </label>
+		<input type="text" id="url" name="url">
+		<input type="submit" value="Submit">
+		</form>
+		<h2>Existing Links </h2>
+		<ul> 
+	`
+
+	for _, link := range linkMap {
+		html += `<li><a href="/` + link.Id + `">` + link.Id + `</a></li>`
+	}
+	html += `</ul>`
+
+	return c.HTML(http.StatusOK, html)
+}
+
+func SubmitHandler(c echo.Context) error{
+	url := c.FormValue("url")
+	if url == "" {
+		return c.String(http.StatusBadRequest, "URL is required")
+	}
+
+	if !(len(url)>=4 && (url[:4] == "http" || url[:5]=="https")){
+		url ="https://" +url
+	}
+
+	id := generateRandomString(8)
+
+	linkMap[id] = &Link{Id:id, Url:url}
+
+	return c.Redirect(http.StatusSeeOther, "/")
 }
